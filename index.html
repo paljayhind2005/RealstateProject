@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Real Estate Deal Platform — Architecture</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e2530;
+    --accent: #e87c3a;
+    --accent2: #3a8ee8;
+    --accent3: #3ae8a0;
+    --accent4: #e83a8e;
+    --text: #e8eaed;
+    --muted: #6b7280;
+    --highlight: #f5a623;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* HEADER */
+  header {
+    padding: 48px 60px 32px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,124,58,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .badge {
+    display: inline-block;
+    background: rgba(232,124,58,0.15);
+    border: 1px solid rgba(232,124,58,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: clamp(28px, 4vw, 48px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+  }
+  h1 span { color: var(--accent); }
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 8px;
+    max-width: 600px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 300;
+  }
+
+  /* LAYOUT */
+  .container { padding: 0 60px; max-width: 1400px; margin: 0 auto; }
+  section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h2 .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    background: rgba(232,124,58,0.1);
+    border: 1px solid rgba(232,124,58,0.25);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+
+  p { color: #9ca3af; font-size: 14px; line-height: 1.75; }
+
+  /* ARCH DIAGRAM */
+  .arch-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .arch-diagram::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      linear-gradient(rgba(232,124,58,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,124,58,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  .arch-layers {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .layer-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .layer-boxes {
+    flex: 1;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .box {
+    flex: 1;
+    min-width: 110px;
+    padding: 14px 16px;
+    border-radius: 6px;
+    border: 1px solid;
+    position: relative;
+  }
+
+  .box-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .box-sub {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    opacity: 0.65;
+    line-height: 1.5;
+  }
+
+  .layer-client .box { background: rgba(58,142,232,0.08); border-color: rgba(58,142,232,0.25); }
+  .layer-client .box-title { color: var(--accent2); }
+  .layer-gateway .box { background: rgba(232,124,58,0.08); border-color: rgba(232,124,58,0.25); }
+  .layer-gateway .box-title { color: var(--accent); }
+  .layer-services .box { background: rgba(58,232,160,0.06); border-color: rgba(58,232,160,0.2); }
+  .layer-services .box-title { color: var(--accent3); }
+  .layer-data .box { background: rgba(232,58,142,0.06); border-color: rgba(232,58,142,0.2); }
+  .layer-data .box-title { color: var(--accent4); }
+  .layer-infra .box { background: rgba(245,166,35,0.06); border-color: rgba(245,166,35,0.2); }
+  .layer-infra .box-title { color: var(--highlight); }
+
+  .arrow-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+  }
+  .arrow-row span {
+    font-size: 18px;
+    color: var(--border);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+  /* TECH STACK GRID */
+  .stack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  .stack-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .stack-card:hover { border-color: rgba(232,124,58,0.4); }
+  .stack-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    border-radius: 3px 0 0 3px;
+  }
+  .stack-card.fe::after { background: var(--accent2); }
+  .stack-card.be::after { background: var(--accent3); }
+  .stack-card.db::after { background: var(--accent4); }
+  .stack-card.infra::after { background: var(--highlight); }
+  .stack-card.search::after { background: var(--accent); }
+
+  .stack-category {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 8px;
+  }
+  .stack-tech {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .stack-reason {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* MODULE CARDS */
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .module-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    position: relative;
+  }
+  .module-card:hover { border-color: var(--border); }
+
+  .module-icon {
+    font-size: 28px;
+    margin-bottom: 14px;
+    display: block;
+  }
+  .module-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  .module-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .module-points li {
+    font-size: 12.5px;
+    color: #9ca3af;
+    padding-left: 16px;
+    position: relative;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+  }
+  .module-points li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-size: 11px;
+  }
+
+  /* ROADMAP */
+  .roadmap {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    position: relative;
+  }
+  .roadmap::before {
+    content: '';
+    position: absolute;
+    top: 28px; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent3), var(--accent), var(--accent4));
+    z-index: 0;
+  }
+  .phase {
+    padding: 0 16px 0 0;
+    position: relative;
+    z-index: 1;
+  }
+  .phase-dot {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .phase:nth-child(1) .phase-dot { background: rgba(58,142,232,0.15); border: 2px solid var(--accent2); color: var(--accent2); }
+  .phase:nth-child(2) .phase-dot { background: rgba(58,232,160,0.15); border: 2px solid var(--accent3); color: var(--accent3); }
+  .phase:nth-child(3) .phase-dot { background: rgba(232,124,58,0.15); border: 2px solid var(--accent); color: var(--accent); }
+  .phase:nth-child(4) .phase-dot { background: rgba(232,58,142,0.15); border: 2px solid var(--accent4); color: var(--accent4); }
+
+  .phase-name {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .phase-duration {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .phase-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .phase-items li {
+    font-size: 12px;
+    color: #9ca3af;
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.6;
+  }
+  .phase-items li::before {
+    content: '·';
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1.1;
+  }
+
+  /* CHALLENGES */
+  .challenges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+  .challenge-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .challenge-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--border);
+    line-height: 1;
+    min-width: 36px;
+  }
+  .challenge-title {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .challenge-desc {
+    font-size: 12.5px;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* MULTI-TENANT */
+  .tenant-diagram {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+  }
+  .tenant-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .tenant-box {
+    flex: 1;
+    padding: 14px 16px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .t-shared { background: rgba(232,124,58,0.1); border: 1px solid rgba(232,124,58,0.3); color: var(--accent); }
+  .t-isolated { background: rgba(58,232,160,0.08); border: 1px solid rgba(58,232,160,0.25); color: var(--accent3); }
+  .t-row-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 100px;
+  }
+
+  /* MATCHING ENGINE */
+  .engine-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 16px 0;
+  }
+  .engine-step {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  .engine-arrow {
+    color: var(--accent);
+    font-size: 20px;
+    padding: 0 8px;
+    flex-shrink: 0;
+  }
+  .engine-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .engine-step-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .engine-step-desc {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  footer {
+    padding: 40px 60px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-note {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media (max-width: 768px) {
+    header, .container, footer { padding-left: 20px; padding-right: 20px; }
+    .roadmap { grid-template-columns: 1fr 1fr; }
+    .roadmap::before { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">System Architecture Document</div>
+  <h1>Real Estate <span>Deal Platform</span><br>Architecture & Tech Strategy</h1>
+  <p class="subtitle">// requirement-driven deal ecosystem + multi-tenant SaaS CRM</p>
+</header>
+
+<div class="container">
+
+  <!-- SYSTEM ARCHITECTURE DIAGRAM -->
+  <section>
+    <h2><span class="num">01</span> High-Level System Architecture</h2>
+    <div class="arch-diagram">
+      <div class="arch-layers">
+
+        <div class="arch-layer layer-client">
+          <div class="layer-label">CLIENT</div>
+          <div class="layer-boxes">
+            <div class="box"><div class="box-title">Web App</div><div class="box-sub">Next.js (Broker/Admin Portal)</div></div>
+            <div class="box"><div class="box-title">Mobile App</div><div class="box-sub">React Native (iOS + Android)</div></div>
+            <div class="box"><div class="box-title">Buyer Portal</div><div class="box-sub">Next.js (Public / NRI)</div></div>
+            <div class="box"><div class="box-title">WhatsApp Bot</div><div class="box-sub">Twilio / Meta API</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-row"><span>↓</span><span>↓</span><span>↓</span><span>↓</span></div>
+
+        <div class="arch-layer layer-gateway">
+          <div class="layer-label">GATEWAY</div>
+          <div class="layer-boxes">
+            <div class="box"><div class="box-title">API Gateway</div><div class="box-sub">Kong / AWS API GW<br>Rate limiting, Auth, Routing</div></div>
+            <div class="box"><div class="box-title">Auth Service</div><div class="box-sub">JWT + OAuth2<br>Tenant-scoped tokens</div></div>
+            <div class="box"><div class="box-title">CDN / Edge</div><div class="box-sub">Cloudflare<br>Media, static assets</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-row"><span>↓</span><span>↓</span><span>↓</span></div>
+
+        <div class="arch-layer layer-services">
+          <div class="layer-label">SERVICES</div>
+          <div class="layer-boxes">
+            <div class="box"><div class="box-title">Listing Service</div><div class="box-sub">Property CRUD<br>Media upload, Verification</div></div>
+            <div class="box"><div class="box-title">Requirement Service</div><div class="box-sub">Buyer requirements<br>Lifecycle management</div></div>
+            <div class="box"><div class="box-title">Matching Engine</div><div class="box-sub">Elasticsearch + ML<br>Async scoring worker</div></div>
+            <div class="box"><div class="box-title">CRM Service</div><div class="box-sub">Leads, pipeline<br>Follow-ups, tasks</div></div>
+            <div class="box"><div class="box-title">Broker Network</div><div class="box-sub">Collaboration, sharing<br>Deal introductions</div></div>
+            <div class="box"><div class="box-title">Notification Svc</div><div class="box-sub">Push, Email, SMS<br>WhatsApp alerts</div></div>
+            <div class="box"><div class="box-title">Document Svc</div><div class="box-sub">Legal docs, repo<br>eSign integration</div></div>
+            <div class="box"><div class="box-title">Analytics Svc</div><div class="box-sub">Deal metrics<br>Tenant dashboards</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-row"><span>↓</span><span>↓</span><span>↓</span><span>↓</span><span>↓</span></div>
+
+        <div class="arch-layer layer-data">
+          <div class="layer-label">DATA</div>
+          <div class="layer-boxes">
+            <div class="box"><div class="box-title">PostgreSQL</div><div class="box-sub">Primary transactional<br>Row-level tenant isolation</div></div>
+            <div class="box"><div class="box-title">Elasticsearch</div><div class="box-sub">Property & req search<br>Geo + full-text</div></div>
+            <div class="box"><div class="box-title">Redis</div><div class="box-sub">Session, caching<br>Rate limits, pub/sub</div></div>
+            <div class="box"><div class="box-title">S3 / R2</div><div class="box-sub">Property photos<br>Documents, PDFs</div></div>
+            <div class="box"><div class="box-title">Message Queue</div><div class="box-sub">RabbitMQ / SQS<br>Async jobs, matching</div></div>
+          </div>
+        </div>
+
+        <div class="arrow-row"><span>↓</span><span>↓</span></div>
+
+        <div class="arch-layer layer-infra">
+          <div class="layer-label">INFRA</div>
+          <div class="layer-boxes">
+            <div class="box"><div class="box-title">Kubernetes (EKS)</div><div class="box-sub">Container orchestration<br>Auto-scaling pods</div></div>
+            <div class="box"><div class="box-title">CI/CD Pipeline</div><div class="box-sub">GitHub Actions<br>ArgoCD GitOps</div></div>
+            <div class="box"><div class="box-title">Observability</div><div class="box-sub">Prometheus + Grafana<br>OpenTelemetry traces</div></div>
+            <div class="box"><div class="box-title">Secrets & Config</div><div class="box-sub">AWS Secrets Manager<br>Per-tenant config store</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TECH STACK -->
+  <section>
+    <h2><span class="num">02</span> Recommended Tech Stack</h2>
+    <div class="stack-grid">
+      <div class="stack-card fe">
+        <div class="stack-category">Frontend — Web</div>
+        <div class="stack-tech">Next.js 14 + TypeScript</div>
+        <div class="stack-reason">App Router, SSR for SEO on listings, server components for CRM dashboard. Tailwind CSS + Radix UI for components.</div>
+      </div>
+      <div class="stack-card fe">
+        <div class="stack-category">Frontend — Mobile</div>
+        <div class="stack-tech">React Native (Expo)</div>
+        <div class="stack-reason">Shared codebase with web team. Expo modules for camera (property photos), push notifications, location.</div>
+      </div>
+      <div class="stack-card be">
+        <div class="stack-category">Backend — API</div>
+        <div class="stack-tech">Node.js + NestJS</div>
+        <div class="stack-reason">Modular architecture with decorators. TypeScript end-to-end. Guards for multi-tenant auth. Easy microservice split.</div>
+      </div>
+      <div class="stack-card be">
+        <div class="stack-category">Matching Engine Worker</div>
+        <div class="stack-tech">Python (FastAPI)</div>
+        <div class="stack-reason">ML scoring models in Python ecosystem. scikit-learn for collaborative filtering. Called async via message queue.</div>
+      </div>
+      <div class="stack-card db">
+        <div class="stack-category">Primary Database</div>
+        <div class="stack-tech">PostgreSQL + Prisma</div>
+        <div class="stack-reason">JSONB for flexible property attributes. Row-level security for tenant isolation. PostGIS for geo queries.</div>
+      </div>
+      <div class="stack-card search">
+        <div class="stack-category">Search & Matching</div>
+        <div class="stack-tech">Elasticsearch 8</div>
+        <div class="stack-reason">Geo-distance queries for location-based matching. Full-text on descriptions. Percolator queries for real-time requirement alerts.</div>
+      </div>
+      <div class="stack-card db">
+        <div class="stack-category">Cache & Sessions</div>
+        <div class="stack-tech">Redis (Upstash)</div>
+        <div class="stack-reason">Session storage, rate limiting per tenant, real-time presence, pub/sub for broker notifications.</div>
+      </div>
+      <div class="stack-card db">
+        <div class="stack-category">Message Queue</div>
+        <div class="stack-tech">RabbitMQ / AWS SQS</div>
+        <div class="stack-reason">Decouples matching engine from API. Async email/WhatsApp dispatch. Dead-letter queues for reliability.</div>
+      </div>
+      <div class="stack-card infra">
+        <div class="stack-category">File Storage</div>
+        <div class="stack-tech">AWS S3 + Cloudflare R2</div>
+        <div class="stack-reason">R2 for hot media (zero egress fees). S3 for documents/legal. Tenant-prefixed bucket paths.</div>
+      </div>
+      <div class="stack-card infra">
+        <div class="stack-category">Infrastructure</div>
+        <div class="stack-tech">AWS EKS + Terraform</div>
+        <div class="stack-reason">Kubernetes for auto-scaling. Terraform IaC for reproducible infra. Horizontal pod autoscaler on matching service.</div>
+      </div>
+      <div class="stack-card infra">
+        <div class="stack-category">Observability</div>
+        <div class="stack-tech">Prometheus + Grafana</div>
+        <div class="stack-reason">Per-tenant metrics. Loki for logs. Tempo for distributed traces. Alerts on matching latency SLAs.</div>
+      </div>
+      <div class="stack-card be">
+        <div class="stack-category">Integrations</div>
+        <div class="stack-tech">Twilio / Meta Cloud API</div>
+        <div class="stack-reason">WhatsApp Business API for broker notifications. SMS OTP. SendGrid for email. Razorpay for SaaS billing.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATCHING ENGINE FLOW -->
+  <section>
+    <h2><span class="num">03</span> Property ↔ Requirement Matching Engine</h2>
+    <p style="margin-bottom:24px;">The matching engine is the core differentiator. It uses Elasticsearch's Percolator + a weighted ML scoring layer running asynchronously.</p>
+    <div class="engine-flow">
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 01</div>
+        <div class="engine-step-title">Requirement Posted</div>
+        <div class="engine-step-desc">Buyer/broker creates requirement with params: type, location, budget, BHK, amenities, timeline</div>
+      </div>
+      <div class="engine-arrow">→</div>
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 02</div>
+        <div class="engine-step-title">Percolator Index</div>
+        <div class="engine-step-desc">Requirement stored as ES percolator query. New listings auto-trigger matching against all active requirements</div>
+      </div>
+      <div class="engine-arrow">→</div>
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 03</div>
+        <div class="engine-step-title">Scoring Layer</div>
+        <div class="engine-step-desc">Python worker scores matches 0–100 on: geo proximity, budget fit, config match, preference weights</div>
+      </div>
+      <div class="engine-arrow">→</div>
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 04</div>
+        <div class="engine-step-title">Match Queue</div>
+        <div class="engine-step-desc">Top N matches published to RabbitMQ. Deduplication prevents repeat notifications</div>
+      </div>
+      <div class="engine-arrow">→</div>
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 05</div>
+        <div class="engine-step-title">Broker Alert</div>
+        <div class="engine-step-desc">WhatsApp/push/email sent to broker with matched property card. CRM lead auto-created</div>
+      </div>
+      <div class="engine-arrow">→</div>
+      <div class="engine-step">
+        <div class="engine-step-num">STEP 06</div>
+        <div class="engine-step-title">Feedback Loop</div>
+        <div class="engine-step-desc">Broker actions (accepted/rejected) feed back into ML model to improve future scoring</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MULTI-TENANT ARCHITECTURE -->
+  <section>
+    <h2><span class="num">04</span> Multi-Tenant Data Isolation Strategy</h2>
+    <p style="margin-bottom:24px;">We use a <strong style="color:var(--accent)">Shared Database, Separate Schema</strong> approach with row-level security — balancing cost efficiency with strict isolation.</p>
+    <div class="tenant-diagram">
+      <div class="tenant-row">
+        <div class="t-row-label">SHARED LAYER</div>
+        <div class="tenant-box t-shared">Platform Auth</div>
+        <div class="tenant-box t-shared">Subscription/Billing</div>
+        <div class="tenant-box t-shared">Broker Network (cross-tenant)</div>
+        <div class="tenant-box t-shared">Global Matching Index</div>
+      </div>
+      <div style="text-align:center;color:var(--muted);font-size:12px;font-family:monospace;padding:8px 0;">↕ tenant_id column on all shared data + PostgreSQL Row Level Security policies</div>
+      <div class="tenant-row">
+        <div class="t-row-label">ISOLATED LAYER</div>
+        <div class="tenant-box t-isolated">Brokerage A<br><small>CRM, Leads, Team</small></div>
+        <div class="tenant-box t-isolated">Brokerage B<br><small>CRM, Leads, Team</small></div>
+        <div class="tenant-box t-isolated">Brokerage C<br><small>CRM, Leads, Team</small></div>
+        <div class="tenant-box t-isolated">Brokerage N…<br><small>CRM, Leads, Team</small></div>
+      </div>
+    </div>
+    <div style="margin-top:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;">
+        <h3 style="font-size:13px;margin-bottom:8px;color:var(--accent3)">JWT Tenant Scoping</h3>
+        <p style="font-size:12px;">Every JWT contains tenant_id. API gateway middleware injects tenant context into every DB query. No cross-tenant data leak possible at ORM level.</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;">
+        <h3 style="font-size:13px;margin-bottom:8px;color:var(--accent3)">PostgreSQL RLS</h3>
+        <p style="font-size:12px;">Row-Level Security policies at database level as a second safety net. Even raw SQL queries cannot access another tenant's data without bypassing RLS.</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:18px;">
+        <h3 style="font-size:13px;margin-bottom:8px;color:var(--accent3)">Storage Isolation</h3>
+        <p style="font-size:12px;">S3 paths: /tenant-{id}/properties/... Signed URLs with tenant validation. Redis key prefixing: tenant:{id}:session:{token}.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- KEY MODULES -->
+  <section>
+    <h2><span class="num">05</span> Key Module Design</h2>
+    <div class="modules-grid">
+      <div class="module-card">
+        <span class="module-icon">🏗️</span>
+        <div class="module-title">Property Listings Module</div>
+        <ul class="module-points">
+          <li>Multi-step listing form with photo upload + AI auto-tagging</li>
+          <li>Broker verification workflow (docs, RERA number)</li>
+          <li>Flexible schema via JSONB for property-type specific attributes</li>
+          <li>PostGIS geo-indexing for map-based search</li>
+          <li>Listing status: Draft → Under Review → Active → Matched → Closed</li>
+          <li>Similar listing deduplication via embedding similarity</li>
+        </ul>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">🎯</span>
+        <div class="module-title">Buyer Requirements Module</div>
+        <ul class="module-points">
+          <li>Structured form: type, location polygon, budget range, BHK, possession</li>
+          <li>Requirement urgency scoring (hot/warm/cold)</li>
+          <li>Expiry management with re-engagement triggers</li>
+          <li>Requirement shared to broker network with visibility controls</li>
+          <li>Activity log: which brokers viewed/responded to requirement</li>
+          <li>WhatsApp intake bot to capture requirements via chat</li>
+        </ul>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">🤝</span>
+        <div class="module-title">Broker Collaboration Network</div>
+        <ul class="module-points">
+          <li>Cross-brokerage requirement sharing with co-brokerage split config</li>
+          <li>Deal introduction flow: introduce → accept → track commission split</li>
+          <li>Broker trust score based on deal history and verifications</li>
+          <li>Private broker groups for requirement circulation</li>
+          <li>Platform-mediated escrow for co-brokerage fees</li>
+          <li>NDA/agreement generation for sensitive requirements</li>
+        </ul>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">📊</span>
+        <div class="module-title">SaaS CRM Module</div>
+        <ul class="module-points">
+          <li>Lead sources: portal, social, website widget, WhatsApp, manual</li>
+          <li>Kanban deal pipeline: Lead → Qualified → Site Visit → Negotiation → Closed</li>
+          <li>Role-based access: Admin, Manager, Senior Broker, Junior Broker</li>
+          <li>Follow-up tasks with calendar sync (Google/Outlook)</li>
+          <li>Site visit scheduling with location and feedback capture</li>
+          <li>Automated requirement extraction from incoming leads via NLP</li>
+        </ul>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">📁</span>
+        <div class="module-title">Document & Legal Module</div>
+        <ul class="module-points">
+          <li>Template library: sale agreement, LOI, rent agreement, POA</li>
+          <li>Per-deal document folder with version history</li>
+          <li>eSign integration (Digio / SignDesk)</li>
+          <li>Dispute tracking workflow with lawyer assignment</li>
+          <li>Property title search status tracking</li>
+          <li>NRI compliance document checklist</li>
+        </ul>
+      </div>
+      <div class="module-card">
+        <span class="module-icon">🌐</span>
+        <div class="module-title">NRI Property Management</div>
+        <ul class="module-points">
+          <li>Dedicated NRI portal with USD/AED pricing display</li>
+          <li>Remote property tour scheduling with video call</li>
+          <li>Dedicated relationship manager assignment per NRI client</li>
+          <li>FEMA/RBI compliance checklist per transaction</li>
+          <li>Rental income management and remittance tracking</li>
+          <li>Power of Attorney workflow for remote transactions</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEVELOPMENT ROADMAP -->
+  <section>
+    <h2><span class="num">06</span> Development Roadmap</h2>
+    <div class="roadmap">
+      <div class="phase">
+        <div class="phase-dot">1</div>
+        <div class="phase-name">MVP Foundation</div>
+        <div class="phase-duration">MONTHS 1–3</div>
+        <ul class="phase-items">
+          <li>Multi-tenant auth & onboarding</li>
+          <li>Property listing CRUD</li>
+          <li>Basic search (ES)</li>
+          <li>Buyer requirement module</li>
+          <li>Simple rule-based matching</li>
+          <li>Basic CRM pipeline</li>
+          <li>WhatsApp notifications</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-dot">2</div>
+        <div class="phase-name">Core Platform</div>
+        <div class="phase-duration">MONTHS 4–6</div>
+        <ul class="phase-items">
+          <li>ML-based matching scoring</li>
+          <li>Broker collaboration network</li>
+          <li>Co-brokerage deal flow</li>
+          <li>Document module + eSign</li>
+          <li>Lead capture integrations</li>
+          <li>Analytics dashboards</li>
+          <li>Mobile app (React Native)</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-dot">3</div>
+        <div class="phase-name">Advanced Features</div>
+        <div class="phase-duration">MONTHS 7–10</div>
+        <ul class="phase-items">
+          <li>NRI portal + RM workflow</li>
+          <li>Dispute/legal module</li>
+          <li>WhatsApp intake bot</li>
+          <li>Advanced CRM automations</li>
+          <li>SaaS billing (per-seat)</li>
+          <li>API for third-party portals</li>
+          <li>AI property description gen</li>
+        </ul>
+      </div>
+      <div class="phase">
+        <div class="phase-dot">4</div>
+        <div class="phase-name">Scale & Ecosystem</div>
+        <div class="phase-duration">MONTHS 11–15</div>
+        <ul class="phase-items">
+          <li>Open marketplace for brokers</li>
+          <li>Data analytics product</li>
+          <li>PropTech API ecosystem</li>
+          <li>Multi-city geo expansion</li>
+          <li>Predictive deal scoring</li>
+          <li>White-label product offering</li>
+          <li>Mobile-first broker app v2</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- TECHNICAL CHALLENGES -->
+  <section>
+    <h2><span class="num">07</span> Hardest Technical Challenges</h2>
+    <div class="challenges-grid">
+      <div class="challenge-card">
+        <div class="challenge-num">01</div>
+        <div>
+          <div class="challenge-title">Real-time Matching at Scale</div>
+          <div class="challenge-desc">When 10,000 active requirements must be checked against each new listing in near-real-time without overwhelming the system. Solution: ES Percolator inverts the problem — requirements wait as stored queries, listings flow through.</div>
+        </div>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-num">02</div>
+        <div>
+          <div class="challenge-title">Multi-Tenant Data Isolation</div>
+          <div class="challenge-desc">Ensuring absolute data separation while sharing infrastructure. A bug in tenant scoping middleware could expose a brokerage's confidential pipeline to a competitor. RLS + middleware + automated isolation tests required.</div>
+        </div>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-num">03</div>
+        <div>
+          <div class="challenge-title">Cross-Tenant Broker Network</div>
+          <div class="challenge-desc">The collaboration network crosses tenant boundaries. Defining exactly what data is shareable (property snapshot) vs. what stays isolated (client name, deal terms) requires careful permission modeling.</div>
+        </div>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-num">04</div>
+        <div>
+          <div class="challenge-title">Duplicate Listing Detection</div>
+          <div class="challenge-desc">Multiple brokers often list the same property. Detecting duplicates across tenants using address normalization + embedding similarity without creating legal conflicts around ownership of the listing.</div>
+        </div>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-num">05</div>
+        <div>
+          <div class="challenge-title">Matching Quality vs. Spam</div>
+          <div class="challenge-desc">A broker getting 50 low-quality matches per day will stop using the platform. Match quality scoring and daily digest limits + broker feedback loops are critical to product retention.</div>
+        </div>
+      </div>
+      <div class="challenge-card">
+        <div class="challenge-num">06</div>
+        <div>
+          <div class="challenge-title">WhatsApp-to-CRM Pipeline</div>
+          <div class="challenge-desc">Brokers communicate on WhatsApp. Capturing unstructured WhatsApp conversations, extracting requirements via NLP and creating structured CRM records without workflow friction is a key UX challenge.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY THIS STACK -->
+  <section>
+    <h2><span class="num">08</span> Why This Stack for Real Estate</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;">
+        <h3 style="color:var(--accent);margin-bottom:12px;">PostgreSQL over MongoDB</h3>
+        <p style="font-size:13px;">Real estate data has complex relational integrity: property → ownership → documents → transactions. JSONB gives flexibility for property attributes while ACID transactions ensure deal data consistency. PostGIS enables native geo queries critical for location matching.</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;">
+        <h3 style="color:var(--accent2);margin-bottom:12px;">Elasticsearch for Matching</h3>
+        <p style="font-size:13px;">Percolator queries are the secret weapon — store requirements as queries, index properties as documents. This inverted approach means matching 10,000 requirements against a new listing is a single ES percolate call, not 10,000 SQL queries.</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;">
+        <h3 style="color:var(--accent3);margin-bottom:12px;">NestJS for Multi-Tenant API</h3>
+        <p style="font-size:13px;">NestJS guards and interceptors are perfect for injecting tenant context uniformly. Module architecture maps directly to business domains (listings, CRM, matching). TypeScript across stack reduces integration bugs between frontend and backend teams.</p>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;">
+        <h3 style="color:var(--highlight);margin-bottom:12px;">Kubernetes for Scale</h3>
+        <p style="font-size:13px;">Matching engine is the most compute-intensive component. K8s horizontal pod autoscaler lets the matching workers scale independently from API servers. During high activity (new project launches), matching capacity scales up automatically without affecting CRM performance.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="footer-note">// Real Estate Deal Platform — Architecture Document v1.0</div>
+  <div class="footer-note">Designed for scalability: 10K+ brokers · 1M+ listings · real-time matching</div>
+</footer>
+
+</body>
+</html>
